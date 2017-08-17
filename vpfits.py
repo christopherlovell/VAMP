@@ -167,7 +167,7 @@ class VPfit():
 
         f.subplots_adjust(hspace=0)
 
-        ax1.set_title("Fit time: " + self.fit_time)
+#        ax1.set_title("Fit time: " + self.fit_time)
         ax1.set_ylabel("Residuals")
         ax2.set_ylabel("Normalised Flux")
         ax3.set_ylabel("Normalised Flux")

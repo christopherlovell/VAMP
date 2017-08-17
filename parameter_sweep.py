@@ -1,7 +1,6 @@
 import numpy as np
 import pandas as pd
 
-%matplotlib inline
 import matplotlib.pyplot as plt
 
 import vpfits
@@ -13,6 +12,8 @@ import pymc as mc
 from pymc.Matplot import plot
 from scipy import stats
 import time
+
+figsize = np.array([8.268, 11.692])
 
 cont = np.loadtxt('data/q1422.cont')
 vpfit = vpfits.VPfit()
@@ -86,18 +87,20 @@ for j, i in enumerate(parameter_mesh):
             del vpfit_2
     bpic_list.append(bpic)
     print "Time taken: {}".format(time.time() - t)
-    print "Time to finish: {}".format((time.time() - t)/((j+1)/3**5))
+    print "Time to finish: {}".format((time.time() - t)/((j+1)/3**5) - (time.time() - t))
 
-plt.xlabel("run number")
-plt.ylabel("BIC")
-xmax = 5
-plt.xticks(range(xmax))
-plt.xlim((1, xmax))
+
+#f, ax = plt.subplots(235, figsize=(figsize[0]*235, figsize[1]), sharex=True)
+#ax[-1].xlabel("run number")
+#[a.ylabel("BIC") for a in ax]
+#xmax = 5
+#[a.xticks(range(xmax)) for a in ax]
+#[a.xlim((1, xmax)) for a in ax]
 #plt.ylim((-280, -240))
-plt.grid(True)
-for i, bpic in enumerate(bpic_list):
-    bpic = np.array(bpic)
-    plt.plot(range(2, xmax+2), stats.binned_statistic(bpic[:, 0], bpic[:, 1], bins=np.arange(1.5, xmax+.5+2, 1), statistic="median")[0])
-    plt.scatter(bpic[:, 0], bpic[:, 1], label=labels[i])
-plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
-plt.savefig("plot.png")
+#for j in range(24):
+#    for i, bpic in enumerate(bpic_list[j*10:j*10+10]):
+#        bpic = np.array(bpic)
+#        plt.plot(range(2, xmax+2), stats.binned_statistic(bpic[:, 0], bpic[:, 1], bins=np.arange(1.5, xmax+.5+2, 1), statistic="median")[0])
+#        plt.scatter(bpic[:, 0], bpic[:, 1], label=labels[i+j*10])
+#plt.legend(bbox_to_anchor=(1.05, 1), loc=2, borderaxespad=0.)
+#plt.savefig("plot.png")
