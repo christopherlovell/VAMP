@@ -33,12 +33,12 @@ from scipy.signal import savgol_filter
 
 class VPfit():
 
-    def __init__(self):
+    def __init__(self, noise=None):
         """
         Initialise noise variable
         """
-        self.std_deviation = 1./mc.Uniform("sd", 0, 1)**2
-    	self.verbose = False
+        self.std_deviation = 1./(mc.Uniform("sd", 0, 1) if noise is None else noise)**2
+        self.verbose = False
 
 
 
@@ -110,7 +110,7 @@ class VPfit():
             expected (array): same shape as observed
             freedom (int): degrees of freedom
         """
-        return VPfit.Chisquared(observed, expected, noise) / (len(expected) - freedom)
+        return VPfit.Chisquared(observed, expected, noise) / (np.sum(np.abs(1-observed) > noise*2) - freedom)
 
 
     def plot(self, wavelength_array, flux_array, clouds=None, n=1, onesigmaerror = 0.02, start_pix=None, end_pix=None):
@@ -167,7 +167,7 @@ class VPfit():
 
         f.subplots_adjust(hspace=0)
 
-#        ax1.set_title("Fit time: " + self.fit_time)
+        ax1.set_title("Fit time: " + self.fit_time)
         ax1.set_ylabel("Residuals")
         ax2.set_ylabel("Normalised Flux")
         ax3.set_ylabel("Normalised Flux")
@@ -265,8 +265,10 @@ class VPfit():
             self.estimated_variables[component]['amplitude'] = xexp
 
             if (component < len(local_minima)):    # use minima location as center of normal prior
-                self.estimated_variables[component]['centroid'] = mc.Normal("est_centroid_%d" % component,
-                        wavelength_array[local_minima[component]], (wavelength_array[-1] - wavelength_array[0]) / 2)
+                self.estimated_variables[component]['centroid'] = mc.Uniform("est_centroid_%d" % component,
+                      #  wavelength_array[local_minima[component]], (wavelength_array[-1] - wavelength_array[0]) / 2)
+                                                                            wavelength_array[0], wavelength_array[-1])
+
 
             else:    # use a flat prior for subsequent components
                 self.estimated_variables[component]['centroid'] = mc.Uniform("est_centroid_%d" % component,
@@ -301,11 +303,11 @@ class VPfit():
         # always reinitialise profiles, otherwise starts sampling from previously calculated parameter values.
         if(voigt):
             if self.verbose:
-            	print "Initialising Voigt profile components."
+                print "Initialising Voigt profile components."
             self.initialise_voigt_profiles(wavelength, n, local_minima)
         else:
             if self.verbose:
-            	print "Initialising Gaussian profile components."
+                print "Initialising Gaussian profile components."
             self.initialise_components(wavelength, n)
 
         # deterministic variable for the full profile, given in terms of normalised flux
@@ -322,16 +324,15 @@ class VPfit():
         self.model = mc.Model([self.estimated_variables[x][y] for x in self.estimated_variables for y in self.estimated_variables[x]])# + [std_deviation])
 
 
-    def map_estimate(self):
+    def map_estimate(self, iterations=2000):
         """
         Compute the Maximum A Posteriori estimates for the initialised model
         """
 
-        self.MAP = mc.MAP(self.model)
-        self.MAP.fit(iterlim=4000)
+        self.map = mc.MAP(self.model)
+        self.map.fit(iterlim=iterations, tol=1e-3)
 
-
-    def mcmc_fit(self, iterations=10000, burnin=6000, thinning=2, step_method=mc.Metropolis):
+    def mcmc_fit(self, iterations=15000, burnin=100, thinning=15, step_method=mc.AdaptiveMetropolis):
         """
         MCMC fit of `n` absorption profiles to a given spectrum
 
@@ -577,7 +578,7 @@ def compute_detection_regions_small(wavelengths, fluxes, noise, min_region_width
         #             end += buffer
         #         regions.append([wavelengths[start], wavelengths[end]])
         #         break
-    	regions.append([wavelengths[start], wavelengths[end]])
+        regions.append([wavelengths[start], wavelengths[end]])
 
     print('Found {} detection regions.'.format(len(regions)))
     return np.array(regions)
